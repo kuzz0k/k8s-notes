@@ -1,0 +1,62 @@
+---
+- name: Installing master node
+  hosts: master
+  become: yes
+  tasks:
+    - name: installing K3s
+      shell: curl -sfL https://get.k3s.io | sh -
+      
+    - name: taking a token
+      slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: token
+      
+    - name: saving a token on control node
+      copy:
+        content: "{{ token.content | b64decode }}"
+        dest: "{{ playbook_dir }}/k3s-token"
+      delegate_to: localhost
+      become: no
+
+- name: installing worker node
+  hosts: workers
+  become: yes
+  tasks:
+    - name: reading a token
+      slurp:
+        src: "{{ playbook_dir }}/k3s-token"
+      register: token
+      delegate_to: localhost
+      become: no
+    
+    - name: Remove old K3s if exists
+      command: /usr/local/bin/k3s-agent-uninstall.sh
+      ignore_errors: yes
+      
+    - name: connecting to cluster with verbose output
+      shell: |
+        curl -sfL https://get.k3s.io | K3S_URL=https://{{ hostvars[groups['master'][0]]['ansible_host'] }}:6443 \
+        K3S_TOKEN={{ token.content | b64decode }} \
+        INSTALL_K3S_DEBUG=true sh -x
+      register: install_result
+      
+    - debug:
+        var: install_result.stdout_lines
+        var: install_result.stderr_lines
+        
+    - name: Wait for k3s-agent to start
+      systemd:
+        name: k3s-agent
+        state: started
+        enabled: yes
+      register: service_status
+      
+    - debug:
+        var: service_status
+        
+    - name: Check k3s-agent status
+      command: systemctl status k3s-agent --no-pager
+      register: agent_status
+      
+    - debug:
+        var: agent_status.stdout_lines
