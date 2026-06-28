@@ -1,6 +1,6 @@
 ---
 - name: Install server
-  hosts: master
+  hosts: control
   become: true
 
   tasks:
@@ -25,8 +25,8 @@
   tasks:
     - shell: |
         curl -sfL https://get.k3s.io | \
-        K3S_URL=https://{{ hostvars[groups['master'][0]].ansible_host }}:6443 \
-        K3S_TOKEN="{{ hostvars[groups['master'][0]].node_token.content | b64decode | trim }}" \
+        K3S_URL=https://{{ hostvars[groups['control'][0]].ansible_host }}:6443 \
+        K3S_TOKEN="{{ hostvars[groups['control'][0]].node_token.content | b64decode | trim }}" \
         sh -
       args:
         creates: /usr/local/bin/k3s-agent
