@@ -1,0 +1,78 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+  namespace: work
+  labels:
+    app.kubernetes.io/name: nginx
+    app.kubernetes.io/version: 1.27.5
+spec:
+  selector:
+    app.kubernetes.io/name: nginx
+    app.kubernetes.io/version: 1.27.5
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: work
+  labels:
+    app.kubernetes.io/name: &nginx-app nginx
+    app.kubernetes.io/version: &nginx-version 1.27.5
+spec:
+  replicas: 3
+  revisionHistoryLimit: 4
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: *nginx-app
+      app.kubernetes.io/version: *nginx-version
+  template:
+    metadata:
+      name: my-pod
+      namespace: work
+      labels:
+        app.kubernetes.io/name: *nginx-app
+        app.kubernetes.io/version: *nginx-version
+    spec:
+      initContainers:
+        - name: init-myservice
+          image: busybox:1.28
+          command: 
+          - 'sh'
+          - '-c'
+          - 'echo The app is running!; sleep 5'
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+      containers:
+        - name: nginx
+          image: nginx:1.27.5
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          livenessProbe:
+            tcpSocket:
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            tcpSocket:
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
