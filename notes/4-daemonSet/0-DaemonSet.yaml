@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: test-ds
+  labels:
+    app.kubernetes.io/name: &name test-st
+    app.kubernetes.io/version: &version v0.0.1
+    app.kubernetes.io/instance: &instance test-st
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: *name
+      app.kubernetes.io/version: *version
+      app.kubernetes.io/instance: *instance
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: *name
+        app.kubernetes.io/version: *version
+        app.kubernetes.io/instance: *instance
+    spec:
+      tolerations:
+        - key: "test-taint"
+          operator: "Exists"
+          effect: "NoExecute"
+      nodeSelector:
+        special: ds-only
+      containers:
+        - name: whoami
+          image: traefik/whoami
+          ports:
+            - containerPort: 80
+              name: http
+              protocol: TCP
+          resources:
+            requests:
+              memory: "100Mi"
+              cpu: "100m"
+            limits:
+              memory: "100Mi"
+              cpu: "100m"
