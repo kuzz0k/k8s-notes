@@ -1,0 +1,61 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-deployment
+  labels:
+    app.kubernetes.io/name: &name test-deployment
+    app.kubernetes.io/version: &version v0.0.1
+    app.kubernetes.io/instance: &instance test-deployment
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: *name
+      app.kubernetes.io/version: *version
+      app.kubernetes.io/instance: *instance
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: *name
+        app.kubernetes.io/version: *version
+        app.kubernetes.io/instance: *instance
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: *name
+              app.kubernetes.io/version: *version
+              app.kubernetes.io/instance: *instance
+          nodeAffinityPolicy: Ignore
+          nodeTaintsPolicy: Honor
+      containers:
+        - name: whoami
+          image: traefik/whoami
+          ports:
+            - containerPort: 80
+              name: http
+              protocol: TCP
+          resources:
+            limits:
+              cpu: "100m"
+              memory: "10Mi"
+            requests:
+              cpu: "100m"
+              memory: "100Mi"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+              scheme: HTTP
+              initialDelaySeconds: 5
+              periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+              scheme: HTTP
+              initialDelaySeconds: 5
+              periodSeconds: 10

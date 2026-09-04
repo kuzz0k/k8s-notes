@@ -1,0 +1,25 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: my-job
+  labels:
+    app.kubernetes.io/name: my-job
+    app.kubernetes.io/version: v0.0.1
+spec:
+  template:
+    spec:
+      ttlSecondsAfterFinished: 100
+      backoffLimit: 4
+      restartPolicy: Never
+      containers:
+        - name: my-job
+          image: busybox:1.28
+          command: ["sh", "-c", "echo Hello, Kubernetes! && sleep 10"]
+      resources:
+        limits:
+          cpu: "500m"
+          memory: "128Mi"
+        requests:
+          cpu: "250m"
+          memory: "64Mi"

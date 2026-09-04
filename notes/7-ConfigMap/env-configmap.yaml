@@ -1,0 +1,9 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-configmap
+data:
+  TEST_ENV: test-value
+  TEST_PORT: "80"
+  TEST_PATH: /

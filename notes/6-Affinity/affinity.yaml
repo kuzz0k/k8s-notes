@@ -1,0 +1,77 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-deployment
+  labels:
+    app.kubernetes.io/name: &name test-deployment
+    app.kubernetes.io/version: &version v0.0.1
+    app.kubernetes.io/instance: &instance test-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: *name
+      app.kubernetes.io/version: *version
+      app.kubernetes.io/instance: *instance
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: *name
+        app.kubernetes.io/version: *version
+        app.kubernetes.io/instance: *instance
+    spec:
+      affinity:
+        nodeAffinity:
+          prefferedDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              preference:
+                matchExpressions:
+                  - key: topology.kubernetes.io/zone
+                    operator: In
+                    values: ['Africa']
+            - weight: 10
+              preference:
+                matchExpressions:
+                  - key: topology.kubernetes.io/zone
+                    operator: In
+                    values: ['Australia']
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values: ['test-deployment', 'test-deployment-2']
+                  - key: app.kubernetes.io/version
+                    operator: In
+                    values: ['v0.0.1']
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: whoami
+          image: traefik/whoami
+          ports:
+            - containerPort: 80
+              name: http
+              protocol: TCP
+          resources:
+            limits:
+              cpu: "100m"
+              memory: "10Mi"
+            requests:
+              cpu: "100m"
+              memory: "100Mi"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+              scheme: HTTP
+              initialDelaySeconds: 5
+              periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+              scheme: HTTP
+              initialDelaySeconds: 5
+              periodSeconds: 10
