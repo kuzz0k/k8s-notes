@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: emptydir-shared-pod
+  labels:
+    app.kunernetes.io/name: emptydir-shared-pod
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: v0.0.1
+spec:
+  volumes:
+  - name: emptydir-volume
+    emptyDir: {}
+  containers:
+  - name: producer
+    image: busybox:1.28
+    command:
+    - /bin/sh
+    - -c
+    args:
+    - |
+      while true; do
+        echo "Hello from producer" > /usr/share/emptydir/message.txt
+        sleep 5
+      done
+    volumeMounts:
+    - name: emptydir-volume
+      mountPath: /usr/share/emptydir
+    resources:
+      limits:
+        memory: "64Mi"
+        cpu: "250m"
+      requests:
+        memory: "32Mi"
+        cpu: "100m"
+  - name: consumer
+    image: busybox:1.28
+    command:
+    - /bin/sh
+    - -c
+    args:
+    - |
+      tail -f /usr/share/emptydir/message.txt
+    volumeMounts:
+    - name: emptydir-volume
+      mountPath: /usr/share/emptydir
+    resources:
+      limits:
+        memory: "64Mi"
+        cpu: "250m"
+      requests:
+        memory: "32Mi"
+        cpu: "100m"

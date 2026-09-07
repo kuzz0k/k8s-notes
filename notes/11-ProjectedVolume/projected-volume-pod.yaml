@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: projected-volume-pod
+  labels:
+    app.kubernetes.io/name: projected-volume-pod
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: v0.0.1
+spec:
+  volumes:
+  - name: all-in-one
+    projected:
+      sources:
+      # Downward API volume source
+      - downwardAPI:
+          items:
+          - path: "pod_name"
+            fieldRef:
+              fieldPath: metadata.name
+          - path: "pod_namespace"
+            fieldRef:
+              fieldPath: metadata.namespace
+      # ConfigMap volume source
+      - configMap:
+          name: app-config
+          items:
+          - key: app.properties
+            path: app.properties
+      # Secret volume source
+      - secret:
+          name: db-credentials
+          items:
+          - key: username
+            path: username
+          - key: password
+            path: password
+  containers:
+  - name: main
+    image: busybox:1.28
+    command:
+    - sh
+    - -c
+    - |
+      echo "---";
+      echo "[+] Pod Information:";
+      echo "Pod Name: $(cat /etc/projected/pod_name)";
+      echo "Pod Namespace: $(cat /etc/projected/pod_namespace)";
+      echo "---";
+      echo "[+] Application Configuration:";
+      cat /etc/projected/app.properties;
+      echo "---";
+      echo "[+] Database Credentials:";
+      echo "Username: $(cat /etc/projected/username)";
+      echo "Password: $(cat /etc/projected/password)";
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "250m"
+      limits:
+        memory: "128Mi"
+        cpu: "500m"
+    volumeMounts:
+    - name: all-in-one
+      mountPath: /etc/projected
+      readOnly: true # рекомендуется для projected volumes
+  restartPolicy: Never
