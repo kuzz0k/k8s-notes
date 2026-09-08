@@ -1,0 +1,82 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: writter-pod
+  labels:
+    app.kunernetes.io/name: shared-pod
+spec:
+  containers:
+  - name: writter
+    image: busybox:1.28
+    command:
+    - /bin/sh
+    - -c
+    args:
+    - |
+      while true; do
+        echo "Hello from producer at $(date)" > /usr/share/emptydir/message.txt
+        sleep 5
+      done
+    volumeMounts:
+    - name: hostpath-volume
+      mountPath: /data
+    resources:
+      limits:
+        memory: "64Mi"
+        cpu: "250m"
+      requests:
+        memory: "32Mi"
+        cpu: "100m"
+  volumes:
+  - name: hostpath-volume
+    hostPath:
+      path: /tmp/hostpath-data
+      type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: reader-pod
+  labels:
+    app.kunernetes.io/name: shared-pod
+spec:
+  affinity:
+    podAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app.kunernetes.io/name
+            operator: In
+            values:
+            - shared-pod
+        topologyKey: kubernetes.io/hostname
+  containers:
+  - name: reader
+    image: busybox:1.28
+    command:
+    - /bin/sh
+    - -c
+    args:
+    - |
+      while true; do
+        if [ -f /data/message.txt ]; then
+          echo "Reader read: $(cat /data/message.txt)"
+        fi
+        sleep 5
+    volumeMounts:
+    - name: hostpath-volume
+      mountPath: /data
+    resources:
+      requests:
+        memory: "32Mi"
+        cpu: "100m"
+      limits:
+        memory: "64Mi"
+        cpu: "250m"
+  volumes:
+  - name: hostpath-volume
+    hostPath:
+      path: /tmp/hostpath-data
+      type: DirectoryOrCreate 
+  
