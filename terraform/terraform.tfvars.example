@@ -3,7 +3,8 @@ pm_api_token_id     = "terrauser@pve!mytoken"
 pm_api_token_secret = "ur-token"
 
 virtual_machines = {
-  "control"   = { id = 201, cores = 1, memory = 2048, size = 10, ip = "192.168.1.201/24" }
-  "worker1"  = { id = 202, cores = 1, memory = 2048, size = 10, ip = "192.168.1.202/24" }
-  "worker2" = { id = 203, cores = 3, memory = 2048, size = 10, ip = "192.168.1.203/24" }
+  "control"   = { id = 201, cores = 2, memory = 3072, size = 10, ip = "192.168.1.201/24" }
+  "worker1"  = { id = 202, cores = 2, memory = 3072, size = 10, ip = "192.168.1.202/24" }
+  "worker2" = { id = 203, cores = 2, memory = 3072, size = 10, ip = "192.168.1.203/24" }
+  "nfs-server" = { id = 204, cores = 2, memory = 1042, size = 50, ip = "192.168.1.204/24 }
 }

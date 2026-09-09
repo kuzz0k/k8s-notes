@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-writer
+  labels:
+    app.kunernetes.io/name: app-writer
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: v0.0.1
+spec:
+  volumes:
+  - name: nfs-storage
+    persistentVolumeClaim:
+      claimName: nfs-pvc-01
+  containers:
+  - name: producer
+    image: busybox:1.28
+    command:
+    - /bin/sh
+    - -c
+    args:
+    - |
+      while true; do
+        echo "Hello from producer at $(date)" >> /data/logs.txt
+        sleep 5
+      done
+    volumeMounts:
+    - name: nfs-storage
+      mountPath: /data
+    resources:
+      limits:
+        memory: "64Mi"
+        cpu: "250m"
+      requests:
+        memory: "32Mi"
+        cpu: "100m"
