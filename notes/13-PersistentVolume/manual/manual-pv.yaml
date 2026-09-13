@@ -10,7 +10,8 @@ spec:
     storage: 5Gi
   accessModes:
     - ReadWriteMany
+  storageClassName: ""
   persistentVolumeReclaimPolicy: Retain
   nfs:
-    path: /volume/nfs
+    path: /srv/nfs/k3s
     server: 192.168.1.204

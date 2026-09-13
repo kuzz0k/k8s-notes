@@ -19,7 +19,7 @@ spec:
     args:
     - |
       while true; do
-        echo "Hello from producer" > /usr/share/emptydir/message.txt
+        echo "Hello from producer ${date}" > /usr/share/emptydir/message.txt
         sleep 5
       done
     volumeMounts:
