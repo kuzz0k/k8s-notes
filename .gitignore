@@ -7,3 +7,5 @@ terraform/terraform.tfvars
 
 terraform/crash.log
 
+
+.DS_Store
