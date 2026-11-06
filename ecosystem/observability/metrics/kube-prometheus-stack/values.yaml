@@ -1,0 +1,196 @@
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubeEtcd:
+  enabled: false
+
+prometheusOperator:
+  affinity: &workers-only
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
+                operator: DoesNotExist
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+  prometheusConfigReloader:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 25Mi
+      limits:
+        memory: 50Mi
+
+  admissionWebhooks:
+    patch:
+      affinity: *workers-only
+
+alertmanager:
+  enabled: true
+
+  config:
+    route:
+      group_by: ['alertname', 'nodename', 'namespace']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      receiver: 'null'
+      routes:
+        - receiver: 'null'
+          matchers:
+            - alertname =~ "Watchdog|InfoInhibitor"
+        - receiver: telegram
+          matchers:
+            - severity =~ "warning|critical"
+    receivers:
+      - name: 'null'
+      - name: telegram
+        telegram_configs:
+          - api_url: https://tg-proxy.<account>.workers.dev   # свой Cloudflare Worker, без / в конце
+            bot_token_file: /etc/alertmanager/secrets/alertmanager-telegram/bot-token
+            chat_id: 123456789   # свой chat_id из getUpdates
+            parse_mode: HTML
+            send_resolved: true
+            message: |-
+              {{ if eq .Status "firing" }}🔥 <b>{{ .CommonLabels.alertname }}</b>{{ else }}✅ <b>{{ .CommonLabels.alertname }}</b> resolved{{ end }}
+              {{ range .Alerts }}
+              {{ .Annotations.summary }}
+              {{ if .Annotations.description }}<i>{{ .Annotations.description }}</i>{{ end }}
+              {{ end }}
+
+  alertmanagerSpec:
+    affinity: *workers-only
+
+    secrets:
+      - alertmanager-telegram
+
+    # Go 1.24+ offers post-quantum key exchange by default; its large ClientHello
+    # hangs at the ISP on the way to Cloudflare (TLS handshake timeout). Use classic X25519.
+    containers:
+      - name: alertmanager
+        env:
+          - name: GODEBUG
+            value: tlsmlkem=0,tlssecpmlkem=0
+
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi
+
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: nfs-client
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 1Gi
+
+prometheus:
+  prometheusSpec:
+    affinity: *workers-only
+
+    scrapeInterval: 30s
+    evaluationInterval: 30s
+    retention: 7d
+    retentionSize: 8GB
+
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        memory: 1Gi
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: nfs-client
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+
+grafana:
+  affinity: *workers-only
+
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+
+  persistence:
+    enabled: false
+
+  defaultDashboardsTimezone: browser
+
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      uid: loki
+      url: http://loki.monitoring.svc:3100
+      access: proxy
+
+  grafana.ini:
+    server:
+      domain: app.local
+      root_url: "%(protocol)s://%(domain)s/grafana/"
+      serve_from_sub_path: true
+
+  sidecar:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
+    dashboards:
+      folderAnnotation: grafana_folder
+      provider:
+        foldersFromFilesStructure: true
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 768Mi
+
+  readinessProbe:
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+kube-state-metrics:
+  affinity: *workers-only
+
+  resources:
+    requests:
+      cpu: 20m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+    limits:
+      memory: 64Mi

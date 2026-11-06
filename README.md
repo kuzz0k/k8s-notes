@@ -6,6 +6,9 @@
 - [`ansible/`](ansible) — установка k3s и NFS-сервера
 - [`kubernetes/`](kubernetes) — конспекты и манифесты
 (оглавление — в [kubernetes/README.md](kubernetes/README.md))
+- [`ecosystem/`](ecosystem) — то, что ставится поверх кубера: Argo CD, Helm, Kustomize, мониторинг
+(оглавление — в [ecosystem/README.md](ecosystem/README.md))
+- [zero-to-cluster](https://github.com/kuzz0k/zero-to-cluster) — проект, где все это собрано вместе: приложение, Gitea, CI/CD, Argo CD, мониторинг
 
 ## Поднять стенд
 

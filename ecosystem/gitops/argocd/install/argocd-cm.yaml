@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  accounts.ubuntu: login, apiKey     # login - вход в UI, apiKey - токены для CI
+  timeout.reconciliation: 60s        # как часто опрашивать git (по умолчанию 3m)
+  # admin.enabled: "false"           # когда свой пользователь с role:admin уже есть
